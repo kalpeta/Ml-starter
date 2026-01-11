@@ -21,6 +21,7 @@ class PredictResponse(BaseModel):
 
 model = None
 expected_n_features: Optional[int] = None
+expected_threshold: Optional[float] = None
 
 def load_model():
     if not MODEL_PATH.exists():
@@ -31,13 +32,15 @@ def load_meta():
     if not META_PATH.exists():
         raise FileNotFoundError(f"Metadata not found at {META_PATH}. Run: make train")
     meta = json.loads(META_PATH.read_text())
-    return int(meta["n_features"])
+    n = int(meta["n_features"])
+    t = float(meta.get("threshold", 0.5))
+    return n, t
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global model, expected_n_features
+    global model, expected_n_features, expected_threshold
     model = load_model()
-    expected_n_features = load_meta()
+    expected_n_features, expected_threshold = load_meta()
     yield
     # cleanup (if needed) goes here
 
@@ -49,9 +52,9 @@ def health():
 
 @app.post("/predict", response_model=PredictResponse)
 def predict(req: PredictRequest):
-    global model, expected_n_features
+    global model, expected_n_features, expected_threshold
 
-    if model is None or expected_n_features is None:
+    if model is None or expected_n_features is None or expected_threshold is None:
         raise HTTPException(status_code=500, detail="Model not loaded")
 
     if len(req.features) != expected_n_features:
@@ -62,5 +65,5 @@ def predict(req: PredictRequest):
 
     x = np.array(req.features, dtype=float).reshape(1, -1)
     prob = float(model.predict_proba(x)[0, 1])
-    pred = int(prob >= 0.5)
+    pred = int(prob >= float(expected_threshold))
     return PredictResponse(probability=prob, prediction=pred)
