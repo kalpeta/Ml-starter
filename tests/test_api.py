@@ -18,7 +18,6 @@ def test_health():
 
 def test_predict_ok():
     n = _n_features()
-    # Send a valid-length feature vector (zeros is fine for a smoke test)
     payload = {"features": np.zeros(n, dtype=float).tolist()}
 
     with TestClient(app) as client:
@@ -30,7 +29,7 @@ def test_predict_ok():
 
 def test_predict_bad_length():
     n = _n_features()
-    bad = {"features": [0.0] * (n - 1)}  # off by one
+    bad = {"features": [0.0] * (n - 1)}
 
     with TestClient(app) as client:
         r = client.post("/predict", json=bad)

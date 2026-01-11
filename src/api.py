@@ -25,12 +25,12 @@ expected_threshold: Optional[float] = None
 
 def load_model():
     if not MODEL_PATH.exists():
-        raise FileNotFoundError(f"Model not found at {MODEL_PATH}. Run: make train")
+        raise FileNotFoundError(f"Model not found at {MODEL_PATH}. Run: python -m src.train_real")
     return joblib.load(MODEL_PATH)
 
 def load_meta():
     if not META_PATH.exists():
-        raise FileNotFoundError(f"Metadata not found at {META_PATH}. Run: make train")
+        raise FileNotFoundError(f"Metadata not found at {META_PATH}. Run: python -m src.train_real")
     meta = json.loads(META_PATH.read_text())
     n = int(meta["n_features"])
     t = float(meta.get("threshold", 0.5))
@@ -42,9 +42,8 @@ async def lifespan(app: FastAPI):
     model = load_model()
     expected_n_features, expected_threshold = load_meta()
     yield
-    # cleanup (if needed) goes here
 
-app = FastAPI(title="ML Starter API", version="0.1.0", lifespan=lifespan)
+app = FastAPI(title="ML Starter API", version="0.2.0", lifespan=lifespan)
 
 @app.get("/health")
 def health():
